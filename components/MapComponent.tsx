@@ -38,7 +38,7 @@ export default function MapComponent({ searchLocation, radius, onLocationSelect 
     <MapContainer
       center={searchLocation || defaultCenter}
       zoom={searchLocation ? 10 : 6}
-      style={{ height: '100%', width: '100%' }}
+      style={{ height: '400px', width: '100%' }}
       key={searchLocation ? `${searchLocation.lat}-${searchLocation.lng}` : 'default'}
     >
       <TileLayer
