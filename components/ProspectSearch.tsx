@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { api, type ProspectSearchRequest, type ProspectSearchResult } from '@/lib/api'
 
@@ -28,7 +28,7 @@ const LOW_PRIORITY_INDUSTRIES = [
 
 export default function ProspectSearch() {
   const [searchLocation, setSearchLocation] = useState<{ lat: number; lng: number } | null>(null)
-  const [radius, setRadius] = useState(50) // km
+  const [radius, setRadius] = useState(55) // km
   const [address, setAddress] = useState('')
   const [geocoding, setGeocoding] = useState(false)
   const [showLowPriority, setShowLowPriority] = useState(false)
@@ -45,6 +45,28 @@ export default function ProspectSearch() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [addingProspect, setAddingProspect] = useState<string | null>(null)
+
+  // Get user's location on mount
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setSearchLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          })
+        },
+        (error) => {
+          console.log('Geolocation error:', error)
+          // Default to Stockholm if geolocation fails
+          setSearchLocation({ lat: 59.3293, lng: 18.0686 })
+        }
+      )
+    } else {
+      // Default to Stockholm if geolocation not supported
+      setSearchLocation({ lat: 59.3293, lng: 18.0686 })
+    }
+  }, [])
 
   const toggleIndustry = (industry: string) => {
     setSelectedIndustries(prev =>
@@ -91,7 +113,7 @@ export default function ProspectSearch() {
     try {
       const searchRequest: ProspectSearchRequest = {
         ...filters,
-        bransch: selectedIndustries.join(','), // Send selected industries as comma-separated string
+        bransch: selectedIndustries.join(','),
         region: `${searchLocation.lat},${searchLocation.lng},${radius}km`,
         max_results: 20,
       }
@@ -111,7 +133,7 @@ export default function ProspectSearch() {
     }
   }
 
-  const handleAddToPipeline = async (prospect: ProspectSearchResult) {
+  const handleAddToPipeline = async (prospect: ProspectSearchResult) => {
     setAddingProspect(prospect.name)
     try {
       await api.prospects.create({
@@ -132,47 +154,170 @@ export default function ProspectSearch() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Map and Filters */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4">Sök Prospects</h2>
-        
+    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+            Sök Prospects
+          </h1>
+          <p style={{ color: 'var(--text-muted)', marginTop: 4 }}>
+            Hitta företag baserat på bransch, plats och omsättning
+          </p>
+        </div>
+
+        {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Map Section */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-6">
             {/* Address Search */}
-            <div className="flex gap-2">
+            <div className="card">
               <input
                 type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleGeocodeAddress()}
-                placeholder="Sök adress (t.ex. Stockholm, Göteborg...)"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Sök adress eller stad..."
+                style={{
+                  width: '100%',
+                  background: 'var(--bg)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '12px 16px',
+                  color: 'var(--text-primary)',
+                  fontSize: 14,
+                }}
               />
-              <button
-                onClick={handleGeocodeAddress}
-                disabled={geocoding}
-                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-400"
-              >
-                {geocoding ? 'Söker...' : 'Sök'}
-              </button>
             </div>
 
             {/* Map */}
-            <div className="h-96 rounded-lg overflow-hidden border border-gray-300">
+            <div className="card" style={{ padding: 0, overflow: 'hidden', height: 500 }}>
               <MapComponent
                 searchLocation={searchLocation}
                 radius={radius}
                 onLocationSelect={(lat, lng) => setSearchLocation({ lat, lng })}
               />
             </div>
+          </div>
+
+          {/* Filters Section */}
+          <div className="space-y-6">
+            {/* Bransch Pills */}
+            <div className="card">
+              <h3 style={{ 
+                fontSize: 13, 
+                fontWeight: 600, 
+                color: 'var(--text-primary)', 
+                marginBottom: 16,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+              }}>
+                Branscher
+              </h3>
+              
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {PRIORITY_INDUSTRIES.map((industry) => {
+                  const isSelected = selectedIndustries.includes(industry)
+                  return (
+                    <button
+                      key={industry}
+                      onClick={() => toggleIndustry(industry)}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: 20,
+                        fontSize: 12,
+                        fontWeight: 500,
+                        border: 'none',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        background: isSelected ? '#6D28D9' : '#1a1f2e',
+                        color: isSelected ? 'white' : '#A0A8B8',
+                      }}
+                    >
+                      {industry}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Low Priority Toggle */}
+              <button
+                onClick={() => setShowLowPriority(!showLowPriority)}
+                style={{
+                  marginTop: 12,
+                  fontSize: 12,
+                  color: 'var(--text-muted)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                }}
+              >
+                {showLowPriority ? '− Dölj' : '+ Visa fler'}
+              </button>
+
+              {showLowPriority && (
+                <div style={{ 
+                  display: 'flex', 
+                  flexWrap: 'wrap', 
+                  gap: 8, 
+                  marginTop: 12,
+                  paddingTop: 12,
+                  borderTop: '1px solid var(--border)',
+                }}>
+                  {LOW_PRIORITY_INDUSTRIES.map((industry) => {
+                    const isSelected = selectedIndustries.includes(industry)
+                    return (
+                      <button
+                        key={industry}
+                        onClick={() => toggleIndustry(industry)}
+                        style={{
+                          padding: '8px 14px',
+                          borderRadius: 20,
+                          fontSize: 12,
+                          fontWeight: 500,
+                          border: 'none',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          background: isSelected ? '#6D28D9' : '#1a1f2e',
+                          color: isSelected ? 'white' : '#A0A8B8',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                        }}
+                      >
+                        <span>⚠</span>
+                        {industry}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
 
             {/* Radius Slider */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Sökradie: {radius} km
-              </label>
+            <div className="card">
+              <h3 style={{ 
+                fontSize: 13, 
+                fontWeight: 600, 
+                color: 'var(--text-primary)', 
+                marginBottom: 16,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+              }}>
+                Sökradie
+              </h3>
+              
+              <div style={{ 
+                fontSize: 32, 
+                fontWeight: 600, 
+                color: 'var(--accent)', 
+                marginBottom: 16,
+                textAlign: 'center',
+              }}>
+                {radius} km
+              </div>
+
               <input
                 type="range"
                 min="10"
@@ -180,170 +325,149 @@ export default function ProspectSearch() {
                 step="5"
                 value={radius}
                 onChange={(e) => setRadius(Number(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                style={{
+                  width: '100%',
+                  height: 6,
+                  borderRadius: 3,
+                  background: 'var(--bg)',
+                  outline: 'none',
+                  cursor: 'pointer',
+                }}
               />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>10 km</span>
-                <span>50 km</span>
-                <span>100 km</span>
-                <span>200 km</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Filters Section */}
-          <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900">Filter</h3>
-            
-            {/* Priority Industries */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Prioriterade branscher
-              </label>
-              <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
-                {PRIORITY_INDUSTRIES.map((industry) => (
-                  <label key={industry} className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedIndustries.includes(industry)}
-                      onChange={() => toggleIndustry(industry)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">{industry}</span>
-                  </label>
-                ))}
-              </div>
             </div>
 
-            {/* Low Priority Industries */}
-            <div>
-              <button
-                onClick={() => setShowLowPriority(!showLowPriority)}
-                className="text-sm text-gray-600 hover:text-gray-900 underline"
-              >
-                {showLowPriority ? 'Dölj' : 'Visa'} lägre prioritet
-              </button>
+            {/* Omsättning */}
+            <div className="card">
+              <h3 style={{ 
+                fontSize: 13, 
+                fontWeight: 600, 
+                color: 'var(--text-primary)', 
+                marginBottom: 16,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+              }}>
+                Omsättning (MSEK)
+              </h3>
               
-              {showLowPriority && (
-                <div className="mt-2 space-y-2 border border-gray-200 rounded-md p-3 bg-gray-50">
-                  {LOW_PRIORITY_INDUSTRIES.map((industry) => (
-                    <label key={industry} className="flex items-start space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedIndustries.includes(industry)}
-                        onChange={() => toggleIndustry(industry)}
-                        className="mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <div className="flex-1">
-                        <span className="text-sm text-gray-700">{industry}</span>
-                        <p className="text-xs text-orange-600 mt-0.5">⚠ Troligen för tekniskt mogna</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Min Omsättning */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Min Omsättning (MSEK)
-              </label>
-              <input
-                type="number"
-                value={filters.min_omsattning_msek || ''}
-                onChange={(e) => setFilters({ ...filters, min_omsattning_msek: e.target.value ? Number(e.target.value) : undefined })}
-                placeholder="t.ex. 50"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            {/* Max Omsättning */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Max Omsättning (MSEK)
-              </label>
-              <input
-                type="number"
-                value={filters.max_omsattning_msek || ''}
-                onChange={(e) => setFilters({ ...filters, max_omsattning_msek: e.target.value ? Number(e.target.value) : undefined })}
-                placeholder="t.ex. 300"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <input
+                  type="number"
+                  value={filters.min_omsattning_msek || ''}
+                  onChange={(e) => setFilters({ ...filters, min_omsattning_msek: e.target.value ? Number(e.target.value) : undefined })}
+                  placeholder="Min"
+                  style={{
+                    flex: 1,
+                    background: 'var(--bg)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: '10px 12px',
+                    color: 'var(--text-primary)',
+                    fontSize: 14,
+                  }}
+                />
+                <span style={{ color: 'var(--text-muted)' }}>—</span>
+                <input
+                  type="number"
+                  value={filters.max_omsattning_msek || ''}
+                  onChange={(e) => setFilters({ ...filters, max_omsattning_msek: e.target.value ? Number(e.target.value) : undefined })}
+                  placeholder="Max"
+                  style={{
+                    flex: 1,
+                    background: 'var(--bg)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: '10px 12px',
+                    color: 'var(--text-primary)',
+                    fontSize: 14,
+                  }}
+                />
+              </div>
             </div>
 
             {/* Search Button */}
             <button
               onClick={handleSearch}
               disabled={loading || !searchLocation}
-              className="w-full px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="btn btn-primary"
+              style={{
+                width: '100%',
+                padding: '14px',
+                fontSize: 14,
+                fontWeight: 600,
+                background: loading ? 'var(--bg-secondary)' : 'linear-gradient(135deg, #6D28D9 0%, #8B5CF6 100%)',
+                opacity: loading || !searchLocation ? 0.5 : 1,
+              }}
             >
-              {loading ? 'Söker...' : 'Sök Prospects'}
+              {loading ? 'Söker...' : `Sök prospects · ${selectedIndustries.length} branscher valda`}
             </button>
           </div>
         </div>
-      </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
-
-      {/* Results */}
-      {results.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">
-            Hittade {results.length} prospects
-          </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {results.map((prospect, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-lg shadow p-4 hover:shadow-lg transition-shadow"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <h4 className="font-semibold text-gray-900">{prospect.name}</h4>
-                  {prospect.has_gasell && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                      🏆 Gasell
-                    </span>
-                  )}
-                </div>
-
-                <div className="space-y-1 text-sm text-gray-600 mb-4">
-                  {prospect.revenue_msek && (
-                    <p>💰 Omsättning: {prospect.revenue_msek.toFixed(1)} MSEK</p>
-                  )}
-                  {prospect.employees && (
-                    <p>👥 Anställda: {prospect.employees}</p>
-                  )}
-                  {prospect.address && (
-                    <p>📍 {prospect.address}</p>
-                  )}
-                </div>
-
-                <button
-                  onClick={() => handleAddToPipeline(prospect)}
-                  disabled={addingProspect === prospect.name}
-                  className="w-full px-4 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  {addingProspect === prospect.name ? 'Lägger till...' : 'Lägg till i pipeline'}
-                </button>
-              </div>
-            ))}
+        {/* Error Message */}
+        {error && (
+          <div className="card" style={{ 
+            background: 'var(--error-light)', 
+            borderColor: 'var(--error)',
+            color: 'var(--error)',
+          }}>
+            {error}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* No Results */}
-      {!loading && results.length === 0 && !error && (
-        <div className="text-center text-gray-500 py-8">
-          Klicka på kartan eller sök efter en adress för att börja söka prospects.
-        </div>
-      )}
+        {/* Results */}
+        {results.length > 0 && (
+          <div className="space-y-4">
+            <h3 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-primary)' }}>
+              Hittade {results.length} prospects
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {results.map((prospect, index) => (
+                <div key={index} className="card animate-fade-in">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 12 }}>
+                    <h4 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {prospect.name}
+                    </h4>
+                    {prospect.has_gasell && (
+                      <span className="badge badge-warning">🏆 Gasell</span>
+                    )}
+                  </div>
+
+                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
+                    {prospect.revenue_msek && (
+                      <p>💰 {prospect.revenue_msek.toFixed(1)} MSEK</p>
+                    )}
+                    {prospect.employees && (
+                      <p>👥 {prospect.employees} anställda</p>
+                    )}
+                    {prospect.address && (
+                      <p>📍 {prospect.address}</p>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => handleAddToPipeline(prospect)}
+                    disabled={addingProspect === prospect.name}
+                    className="btn btn-primary"
+                    style={{ width: '100%', fontSize: 13 }}
+                  >
+                    {addingProspect === prospect.name ? 'Lägger till...' : 'Lägg till i pipeline'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* No Results */}
+        {!loading && results.length === 0 && !error && searchLocation && (
+          <div className="card" style={{ textAlign: 'center', padding: 40 }}>
+            <p style={{ color: 'var(--text-muted)' }}>
+              Justera dina filter och tryck på sök för att hitta prospects.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
