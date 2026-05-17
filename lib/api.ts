@@ -1,4 +1,4 @@
-const BASE = process.env.NEXT_PUBLIC_API_URL || 'https://white-rabbit-api-production-9119.up.railway.app'
+const BASE = 'https://white-rabbit-api-production-9119.up.railway.app'
 
 export interface Company {
   id: number
