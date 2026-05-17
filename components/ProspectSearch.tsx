@@ -7,14 +7,36 @@ import { api, type ProspectSearchRequest, type ProspectSearchResult } from '@/li
 // Dynamically import MapComponent with SSR disabled
 const MapComponent = dynamic(() => import('./MapComponent'), { ssr: false })
 
+// Priority industries
+const PRIORITY_INDUSTRIES = [
+  'Ecommerce / Detaljhandel',
+  'Logistik / Transport',
+  'Bemanning / Rekrytering',
+  'Bygg / Fastighet',
+  'Partihandel / Distribution',
+  'Vård / Omsorg administration',
+  'Tillverkning / Industri',
+  'B2B Tjänster',
+]
+
+const LOW_PRIORITY_INDUSTRIES = [
+  'IT / Mjukvara',
+  'Konsultbolag IT',
+  'SaaS / Tech startup',
+  'Fintech',
+]
+
 export default function ProspectSearch() {
   const [searchLocation, setSearchLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [radius, setRadius] = useState(50) // km
   const [address, setAddress] = useState('')
   const [geocoding, setGeocoding] = useState(false)
+  const [showLowPriority, setShowLowPriority] = useState(false)
+  
+  // Initialize with all priority industries selected
+  const [selectedIndustries, setSelectedIndustries] = useState<string[]>(PRIORITY_INDUSTRIES)
   
   const [filters, setFilters] = useState({
-    bransch: '',
     min_omsattning_msek: undefined as number | undefined,
     max_omsattning_msek: undefined as number | undefined,
   })
@@ -23,6 +45,14 @@ export default function ProspectSearch() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [addingProspect, setAddingProspect] = useState<string | null>(null)
+
+  const toggleIndustry = (industry: string) => {
+    setSelectedIndustries(prev =>
+      prev.includes(industry)
+        ? prev.filter(i => i !== industry)
+        : [...prev, industry]
+    )
+  }
 
   const handleGeocodeAddress = async () => {
     if (!address.trim()) return
@@ -61,6 +91,7 @@ export default function ProspectSearch() {
     try {
       const searchRequest: ProspectSearchRequest = {
         ...filters,
+        bransch: selectedIndustries.join(','), // Send selected industries as comma-separated string
         region: `${searchLocation.lat},${searchLocation.lng},${radius}km`,
         max_results: 20,
       }
@@ -80,12 +111,12 @@ export default function ProspectSearch() {
     }
   }
 
-  const handleAddToPipeline = async (prospect: ProspectSearchResult) => {
+  const handleAddToPipeline = async (prospect: ProspectSearchResult) {
     setAddingProspect(prospect.name)
     try {
       await api.prospects.create({
         name: prospect.name,
-        industry: filters.bransch || 'unknown',
+        industry: selectedIndustries[0] || 'unknown',
         revenue_msek: prospect.revenue_msek,
         employees: prospect.employees,
         profitability: 'unknown',
@@ -164,24 +195,53 @@ export default function ProspectSearch() {
           <div className="space-y-4">
             <h3 className="font-semibold text-gray-900">Filter</h3>
             
-            {/* Bransch */}
+            {/* Priority Industries */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Bransch
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Prioriterade branscher
               </label>
-              <select
-                value={filters.bransch}
-                onChange={(e) => setFilters({ ...filters, bransch: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
+                {PRIORITY_INDUSTRIES.map((industry) => (
+                  <label key={industry} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedIndustries.includes(industry)}
+                      onChange={() => toggleIndustry(industry)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{industry}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Low Priority Industries */}
+            <div>
+              <button
+                onClick={() => setShowLowPriority(!showLowPriority)}
+                className="text-sm text-gray-600 hover:text-gray-900 underline"
               >
-                <option value="">Alla branscher</option>
-                <option value="IT">IT</option>
-                <option value="Bygg">Bygg</option>
-                <option value="Logistik">Logistik</option>
-                <option value="E-handel">E-handel</option>
-                <option value="Bemanning">Bemanning</option>
-                <option value="Fastighet">Fastighet</option>
-              </select>
+                {showLowPriority ? 'Dölj' : 'Visa'} lägre prioritet
+              </button>
+              
+              {showLowPriority && (
+                <div className="mt-2 space-y-2 border border-gray-200 rounded-md p-3 bg-gray-50">
+                  {LOW_PRIORITY_INDUSTRIES.map((industry) => (
+                    <label key={industry} className="flex items-start space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedIndustries.includes(industry)}
+                        onChange={() => toggleIndustry(industry)}
+                        className="mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <div className="flex-1">
+                        <span className="text-sm text-gray-700">{industry}</span>
+                        <p className="text-xs text-orange-600 mt-0.5">⚠ Troligen för tekniskt mogna</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Min Omsättning */}
