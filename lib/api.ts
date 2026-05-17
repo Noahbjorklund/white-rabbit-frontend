@@ -128,3 +128,4 @@ export const api = {
       request<Activity>('/activities/', { method: 'POST', body: JSON.stringify(body) }),
   },
 }
+
