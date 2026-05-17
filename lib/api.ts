@@ -94,6 +94,31 @@ export interface AnalyzeResponse {
   tokens_used?: number
 }
 
+export interface ProspectSearchRequest {
+  bransch?: string
+  region?: string
+  min_omsattning_msek?: number
+  max_omsattning_msek?: number
+  min_anstallda?: number
+  max_anstallda?: number
+  max_results?: number
+}
+
+export interface ProspectSearchResult {
+  name: string
+  revenue_msek: number | null
+  employees: number | null
+  address: string | null
+  allabolag_url: string | null
+  has_gasell: boolean
+}
+
+export interface ProspectSearchResponse {
+  prospects: ProspectSearchResult[]
+  count: number
+  filters_used: Record<string, any>
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     headers: { 'Content-Type': 'application/json' },
@@ -121,6 +146,8 @@ export const api = {
       request<AnalyzeResponse>('/ai/analyze', { method: 'POST', body: JSON.stringify(body) }),
     pushCRM: (company_id: number, crm: string) =>
       request('/ai/crm/push', { method: 'POST', body: JSON.stringify({ company_id, crm }) }),
+    prospectSearch: (body: ProspectSearchRequest) =>
+      request<ProspectSearchResponse>('/ai/prospect-search', { method: 'POST', body: JSON.stringify(body) }),
   },
   activities: {
     list: (company_id: number) =>

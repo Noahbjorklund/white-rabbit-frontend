@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 const nav = [
   { section: 'Prospecting', items: [
     { label: 'Prospects', href: '/prospects', icon: '⬡' },
+    { label: 'Prospektering', href: '/search', icon: '⬡' },
     { label: 'Companies', href: '/companies', icon: '⬡' },
     { label: 'Contacts', href: '/contacts', icon: '⬡' },
   ]},
