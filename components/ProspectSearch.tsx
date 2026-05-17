@@ -65,9 +65,15 @@ export default function ProspectSearch() {
         max_results: 20,
       }
       
+      console.log('🔍 Prospect Search Request:', searchRequest)
+      
       const response = await api.ai.prospectSearch(searchRequest)
+      
+      console.log('✅ Prospect Search Response:', response)
+      
       setResults(response.prospects)
     } catch (err) {
+      console.error('❌ Prospect Search Error:', err)
       setError(err instanceof Error ? err.message : 'Search failed')
     } finally {
       setLoading(false)
