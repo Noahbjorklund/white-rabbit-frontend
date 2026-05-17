@@ -1,34 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { MapContainer, TileLayer, Circle, Marker, useMapEvents } from 'react-leaflet'
+import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import { api, type ProspectSearchRequest, type ProspectSearchResult } from '@/lib/api'
-import 'leaflet/dist/leaflet.css'
-import L from 'leaflet'
 
-// Fix for default marker icon in Next.js
-delete (L.Icon.Default.prototype as any)._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-})
-
-interface MapClickHandlerProps {
-  onLocationSelect: (lat: number, lng: number) => void
-}
-
-function MapClickHandler({ onLocationSelect }: MapClickHandlerProps) {
-  useMapEvents({
-    click: (e) => {
-      onLocationSelect(e.latlng.lat, e.latlng.lng)
-    },
-  })
-  return null
-}
+// Dynamically import MapComponent with SSR disabled
+const MapComponent = dynamic(() => import('./MapComponent'), { ssr: false })
 
 export default function ProspectSearch() {
-  const [mounted, setMounted] = useState(false)
   const [searchLocation, setSearchLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [radius, setRadius] = useState(50) // km
   const [address, setAddress] = useState('')
@@ -44,13 +23,6 @@ export default function ProspectSearch() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [addingProspect, setAddingProspect] = useState<string | null>(null)
-
-  // Default center: Stockholm
-  const defaultCenter: [number, number] = [59.3293, 18.0686]
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   const handleGeocodeAddress = async () => {
     if (!address.trim()) return
@@ -122,10 +94,6 @@ export default function ProspectSearch() {
     }
   }
 
-  if (!mounted) {
-    return <div className="p-6">Laddar karta...</div>
-  }
-
   return (
     <div className="space-y-6">
       {/* Map and Filters */}
@@ -156,29 +124,11 @@ export default function ProspectSearch() {
 
             {/* Map */}
             <div className="h-96 rounded-lg overflow-hidden border border-gray-300">
-              <MapContainer
-                center={searchLocation || defaultCenter}
-                zoom={searchLocation ? 10 : 6}
-                style={{ height: '100%', width: '100%' }}
-                key={searchLocation ? `${searchLocation.lat}-${searchLocation.lng}` : 'default'}
-              >
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                <MapClickHandler onLocationSelect={(lat, lng) => setSearchLocation({ lat, lng })} />
-                
-                {searchLocation && (
-                  <>
-                    <Marker position={[searchLocation.lat, searchLocation.lng]} />
-                    <Circle
-                      center={[searchLocation.lat, searchLocation.lng]}
-                      radius={radius * 1000} // Convert km to meters
-                      pathOptions={{ color: 'blue', fillColor: 'blue', fillOpacity: 0.1 }}
-                    />
-                  </>
-                )}
-              </MapContainer>
+              <MapComponent
+                searchLocation={searchLocation}
+                radius={radius}
+                onLocationSelect={(lat, lng) => setSearchLocation({ lat, lng })}
+              />
             </div>
 
             {/* Radius Slider */}
