@@ -19,61 +19,172 @@ export default function ProspectCard({ company, selected, onClick }: Props) {
   return (
     <div
       onClick={onClick}
+      className="card animate-fade-in"
       style={{
         background: 'var(--surface)',
-        border: `1px solid ${selected ? 'var(--text-primary)' : 'var(--border)'}`,
-        borderRadius: 10,
-        padding: '14px 18px',
+        border: `1px solid ${selected ? 'var(--accent)' : 'var(--border)'}`,
+        borderRadius: 'var(--radius-md)',
+        padding: 'var(--space-lg)',
         cursor: 'pointer',
-        transition: 'border-color 0.15s',
+        transition: 'all 0.2s ease',
+        boxShadow: selected ? 'var(--shadow-md)' : 'none',
+      }}
+      onMouseEnter={(e) => {
+        if (!selected) {
+          e.currentTarget.style.borderColor = 'var(--border-hover)'
+          e.currentTarget.style.transform = 'translateY(-1px)'
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!selected) {
+          e.currentTarget.style.borderColor = 'var(--border)'
+          e.currentTarget.style.transform = 'translateY(0)'
+        }
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      {/* Header */}
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'flex-start', 
+        justifyContent: 'space-between', 
+        marginBottom: 'var(--space-md)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
+          {/* Avatar */}
           <div style={{
-            width: 34, height: 34, borderRadius: 8,
-            background: 'var(--bg)', border: '1px solid var(--border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 11, fontWeight: 500, color: 'var(--text-secondary)', flexShrink: 0,
-          }}>{initials}</div>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 500 }}>{company.name}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 1 }}>
-              {industryLabel[company.industry] || company.industry}
-              {company.employees ? ` · ${company.employees} anst.` : ''}
-              {company.revenue_msek ? ` · ${company.revenue_msek} MSEK` : ''}
+            width: 40, 
+            height: 40, 
+            borderRadius: 'var(--radius-sm)',
+            background: 'var(--bg)',
+            border: '1px solid var(--border)',
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            fontSize: 12, 
+            fontWeight: 600, 
+            color: 'var(--text-secondary)',
+            flexShrink: 0,
+          }}>
+            {initials}
+          </div>
+          
+          {/* Company Info */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ 
+              fontSize: 14, 
+              fontWeight: 600, 
+              color: 'var(--text-primary)',
+              marginBottom: 4,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}>
+              {company.name}
+            </div>
+            <div style={{ 
+              fontSize: 12, 
+              color: 'var(--text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}>
+              <span>{industryLabel[company.industry] || company.industry}</span>
+              {company.employees && (
+                <>
+                  <span style={{ opacity: 0.5 }}>·</span>
+                  <span>{company.employees} anst.</span>
+                </>
+              )}
+              {company.revenue_msek && (
+                <>
+                  <span style={{ opacity: 0.5 }}>·</span>
+                  <span>{company.revenue_msek} MSEK</span>
+                </>
+              )}
             </div>
           </div>
         </div>
+        
+        {/* Score Badge */}
         <ScoreBadge score={company.score} />
       </div>
 
+      {/* Pain Points */}
       {company.pain_points?.length > 0 && (
-        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 10 }}>
+        <div style={{ 
+          display: 'flex', 
+          gap: 6, 
+          flexWrap: 'wrap', 
+          marginBottom: 'var(--space-md)',
+        }}>
           {company.pain_points.slice(0, 2).map((p, i) => (
             <span key={i} style={{
-              fontSize: 11, padding: '2px 8px', borderRadius: 4,
-              background: 'var(--bg)', color: 'var(--text-secondary)',
+              fontSize: 11,
+              padding: '4px 10px',
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--bg)',
+              color: 'var(--text-secondary)',
               border: '1px solid var(--border)',
-            }}>{p}</span>
+              fontWeight: 500,
+            }}>
+              {p}
+            </span>
           ))}
           {company.pain_points.length > 2 && (
-            <span style={{ fontSize: 11, padding: '2px 8px', color: 'var(--text-tertiary)' }}>
-              +{company.pain_points.length - 2} till
+            <span style={{ 
+              fontSize: 11, 
+              padding: '4px 10px', 
+              color: 'var(--text-muted)',
+              fontWeight: 500,
+            }}>
+              +{company.pain_points.length - 2} more
             </span>
           )}
         </div>
       )}
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ fontSize: 11, color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: 5 }}>
-          <span style={{ fontSize: 6, color: company.urgency === 'high' ? '#0f6e56' : company.urgency === 'medium' ? '#854f0b' : '#888' }}>●</span>
-          {company.sales_angle
-            ? company.sales_angle.slice(0, 60) + (company.sales_angle.length > 60 ? '…' : '')
-            : 'Ej analyserad ännu'}
+      {/* Footer */}
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        paddingTop: 'var(--space-sm)',
+        borderTop: '1px solid var(--border)',
+      }}>
+        <div style={{ 
+          fontSize: 12, 
+          color: 'var(--text-muted)', 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 8,
+          flex: 1,
+          minWidth: 0,
+        }}>
+          <span style={{ 
+            fontSize: 8, 
+            color: company.urgency === 'high' 
+              ? 'var(--success)' 
+              : company.urgency === 'medium' 
+              ? 'var(--warning)' 
+              : 'var(--text-muted)',
+          }}>
+            ●
+          </span>
+          <span style={{
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>
+            {company.sales_angle || 'Not analyzed yet'}
+          </span>
         </div>
         {company.crm_synced_at && (
-          <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>CRM ✓</span>
+          <span className="badge badge-success" style={{
+            fontSize: 10,
+            marginLeft: 8,
+          }}>
+            CRM ✓
+          </span>
         )}
       </div>
     </div>

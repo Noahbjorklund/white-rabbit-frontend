@@ -32,10 +32,10 @@ export default function DetailPanel({ company, onUpdate }: { company: Company; o
         tech_stack: company.tech_stack,
         save_to_company: company.id,
       })
-      setMsg('Analys klar!')
+      setMsg('Analysis complete!')
       onUpdate()
     } catch {
-      setMsg('Fel vid analys — kontrollera att API:et körs.')
+      setMsg('Analysis failed — check API connection.')
     }
     setAnalyzing(false)
   }
@@ -45,42 +45,89 @@ export default function DetailPanel({ company, onUpdate }: { company: Company; o
     setMsg('')
     try {
       await api.ai.pushCRM(company.id, crm)
-      setMsg(`Pushat till ${crm}!`)
+      setMsg(`Pushed to ${crm}!`)
       onUpdate()
     } catch {
-      setMsg('Fel vid CRM-push — kontrollera API-nyckel.')
+      setMsg('CRM push failed — check API key.')
     }
     setPushing(false)
   }
 
   const tag = (text: string, color: string) => (
     <span style={{
-      fontSize: 11, padding: '3px 8px', borderRadius: 4,
-      background: color + '15', color, border: `1px solid ${color}30`,
-    }}>{text}</span>
+      fontSize: 11, 
+      padding: '4px 10px', 
+      borderRadius: 'var(--radius-sm)',
+      background: color + '15', 
+      color, 
+      border: `1px solid ${color}30`,
+      fontWeight: 500,
+    }}>
+      {text}
+    </span>
   )
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+    <div style={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      height: '100%', 
+      overflow: 'hidden',
+      background: 'var(--bg-secondary)',
+    }}>
       {/* Header */}
-      <div style={{ padding: '20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-        <div style={{ fontSize: 16, fontWeight: 500 }}>{company.name}</div>
-        <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 3 }}>{company.industry} · Stockholm, SE</div>
-        <div style={{ marginTop: 12 }}>
-          <ScoreBadge score={company.score} />
+      <div style={{ 
+        padding: 'var(--space-xl)', 
+        borderBottom: '1px solid var(--border)', 
+        flexShrink: 0,
+      }}>
+        <div style={{ 
+          fontSize: 18, 
+          fontWeight: 600, 
+          color: 'var(--text-primary)',
+          marginBottom: 6,
+        }}>
+          {company.name}
         </div>
+        <div style={{ 
+          fontSize: 13, 
+          color: 'var(--text-muted)', 
+          marginBottom: 16,
+        }}>
+          {company.industry} · Stockholm, SE
+        </div>
+        <ScoreBadge score={company.score} />
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', flexShrink: 0, padding: '0 20px' }}>
+      <div style={{ 
+        display: 'flex', 
+        borderBottom: '1px solid var(--border)', 
+        flexShrink: 0, 
+        padding: '0 var(--space-xl)',
+        background: 'var(--surface)',
+      }}>
         {([
           { id: 'intelligence' as Tab, label: 'Intelligence' },
-          { id: 'activities' as Tab, label: 'Aktiviteter' },
+          { id: 'activities' as Tab, label: 'Activities' },
         ]).map(t => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            style={tabBtn(tab === t.id)}
+            style={{
+              flex: 1,
+              padding: '12px 0',
+              fontSize: 13,
+              fontWeight: tab === t.id ? 600 : 400,
+              color: tab === t.id ? 'var(--text-primary)' : 'var(--text-muted)',
+              background: 'none',
+              border: 'none',
+              borderBottom: tab === t.id ? '2px solid var(--accent)' : '2px solid transparent',
+              marginBottom: -1,
+              cursor: 'pointer',
+              fontFamily: 'var(--font-sora)',
+              transition: 'all 0.15s ease',
+            }}
           >
             {t.label}
           </button>
@@ -89,27 +136,70 @@ export default function DetailPanel({ company, onUpdate }: { company: Company; o
 
       {/* Tab content */}
       {tab === 'intelligence' ? (
-        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflowY: 'auto' }}>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          flex: 1, 
+          overflowY: 'auto',
+        }}>
           {/* Score breakdown */}
           {Object.keys(company.score_breakdown || {}).length > 0 && (
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
-              <div style={sectionTitle}>Poängfördelning</div>
-              {Object.entries(company.score_breakdown).map(([k, v]) => (
-                <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-secondary)', padding: '2px 0' }}>
-                  <span>{k}</span>
-                  <span style={{ color: (v as number) > 0 ? 'var(--score-hot)' : '#e24b4a', fontWeight: 500 }}>{(v as number) > 0 ? '+' : ''}{v as number}</span>
-                </div>
-              ))}
+            <div style={{ 
+              padding: 'var(--space-lg) var(--space-xl)', 
+              borderBottom: '1px solid var(--border)',
+            }}>
+              <div style={sectionTitle}>Score Breakdown</div>
+              <div style={{ 
+                background: 'var(--surface)', 
+                borderRadius: 'var(--radius-md)', 
+                padding: 'var(--space-md)',
+                border: '1px solid var(--border)',
+              }}>
+                {Object.entries(company.score_breakdown).map(([k, v]) => (
+                  <div key={k} style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    fontSize: 12, 
+                    color: 'var(--text-secondary)', 
+                    padding: '6px 0',
+                    borderBottom: '1px solid var(--border)',
+                  }}>
+                    <span>{k}</span>
+                    <span style={{ 
+                      color: (v as number) > 0 ? 'var(--success)' : 'var(--error)', 
+                      fontWeight: 600,
+                    }}>
+                      {(v as number) > 0 ? '+' : ''}{v as number}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
           {/* Pain points */}
           {company.pain_points?.length > 0 && (
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
-              <div style={sectionTitle}>Operationella problem</div>
+            <div style={{ 
+              padding: 'var(--space-lg) var(--space-xl)', 
+              borderBottom: '1px solid var(--border)',
+            }}>
+              <div style={sectionTitle}>Operational Issues</div>
               {company.pain_points.map((p, i) => (
-                <div key={i} style={{ fontSize: 12, color: 'var(--text-secondary)', padding: '4px 0', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                  <span style={{ color: '#854f0b', marginTop: 2, fontSize: 8 }}>●</span>{p}
+                <div key={i} style={{ 
+                  fontSize: 13, 
+                  color: 'var(--text-secondary)', 
+                  padding: '8px 0', 
+                  display: 'flex', 
+                  gap: 10, 
+                  alignItems: 'flex-start',
+                  lineHeight: 1.5,
+                }}>
+                  <span style={{ 
+                    color: 'var(--warning)', 
+                    marginTop: 2, 
+                    fontSize: 8,
+                  }}>●</span>
+                  {p}
                 </div>
               ))}
             </div>
@@ -117,11 +207,27 @@ export default function DetailPanel({ company, onUpdate }: { company: Company; o
 
           {/* Automation opportunities */}
           {company.automation_opportunities?.length > 0 && (
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
-              <div style={sectionTitle}>Automationsmöjligheter</div>
+            <div style={{ 
+              padding: 'var(--space-lg) var(--space-xl)', 
+              borderBottom: '1px solid var(--border)',
+            }}>
+              <div style={sectionTitle}>Automation Opportunities</div>
               {company.automation_opportunities.map((a, i) => (
-                <div key={i} style={{ fontSize: 12, color: 'var(--text-secondary)', padding: '4px 0', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                  <span style={{ color: 'var(--score-hot)', marginTop: 2, fontSize: 8 }}>●</span>{a}
+                <div key={i} style={{ 
+                  fontSize: 13, 
+                  color: 'var(--text-secondary)', 
+                  padding: '8px 0', 
+                  display: 'flex', 
+                  gap: 10, 
+                  alignItems: 'flex-start',
+                  lineHeight: 1.5,
+                }}>
+                  <span style={{ 
+                    color: 'var(--success)', 
+                    marginTop: 2, 
+                    fontSize: 8,
+                  }}>●</span>
+                  {a}
                 </div>
               ))}
             </div>
@@ -129,32 +235,57 @@ export default function DetailPanel({ company, onUpdate }: { company: Company; o
 
           {/* Tech stack */}
           {company.tech_stack?.length > 0 && (
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
-              <div style={sectionTitle}>Tech stack</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 4 }}>
-                {company.tech_stack.map(s => tag(s, '#185fa5'))}
+            <div style={{ 
+              padding: 'var(--space-lg) var(--space-xl)', 
+              borderBottom: '1px solid var(--border)',
+            }}>
+              <div style={sectionTitle}>Tech Stack</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                {company.tech_stack.map(s => tag(s, 'var(--accent)'))}
               </div>
             </div>
           )}
 
           {/* Sales angle */}
           {company.sales_angle && (
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
-              <div style={sectionTitle}>Säljvinkel</div>
+            <div style={{ 
+              padding: 'var(--space-lg) var(--space-xl)', 
+              borderBottom: '1px solid var(--border)',
+            }}>
+              <div style={sectionTitle}>Sales Angle</div>
               <div style={{
-                fontSize: 12, fontWeight: 500, lineHeight: 1.6,
-                padding: '10px 12px', background: 'var(--bg)',
-                borderRadius: 6, borderLeft: '2px solid var(--text-primary)',
+                fontSize: 13, 
+                fontWeight: 500, 
+                lineHeight: 1.6,
+                padding: 'var(--space-md)',
+                background: 'var(--surface)',
+                borderRadius: 'var(--radius-md)',
+                borderLeft: '3px solid var(--accent)',
                 marginTop: 6,
-              }}>{company.sales_angle}</div>
+                color: 'var(--text-primary)',
+              }}>
+                {company.sales_angle}
+              </div>
             </div>
           )}
 
           {/* SDR notes */}
           {company.sdr_notes && (
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
-              <div style={sectionTitle}>SDR-anteckningar</div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, fontFamily: 'var(--font-mono)', marginTop: 6 }}>
+            <div style={{ 
+              padding: 'var(--space-lg) var(--space-xl)', 
+              borderBottom: '1px solid var(--border)',
+            }}>
+              <div style={sectionTitle}>SDR Notes</div>
+              <div style={{ 
+                fontSize: 12, 
+                color: 'var(--text-secondary)', 
+                lineHeight: 1.6,
+                marginTop: 6,
+                fontFamily: 'monospace',
+                background: 'var(--surface)',
+                padding: 'var(--space-md)',
+                borderRadius: 'var(--radius-md)',
+              }}>
                 {company.sdr_notes}
               </div>
             </div>
@@ -162,29 +293,71 @@ export default function DetailPanel({ company, onUpdate }: { company: Company; o
 
           {/* Estimated hours */}
           {company.estimated_hours_saved && (
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
-              <div style={sectionTitle}>Estimerade tidsbesparingar</div>
-              <div style={{ fontSize: 22, fontWeight: 500, color: 'var(--score-hot)', marginTop: 4 }}>
-                ~{company.estimated_hours_saved}h<span style={{ fontSize: 12, color: 'var(--text-tertiary)', fontWeight: 400 }}> / månad</span>
+            <div style={{ 
+              padding: 'var(--space-lg) var(--space-xl)', 
+              borderBottom: '1px solid var(--border)',
+            }}>
+              <div style={sectionTitle}>Estimated Time Savings</div>
+              <div style={{ 
+                fontSize: 28, 
+                fontWeight: 600, 
+                color: 'var(--success)', 
+                marginTop: 4,
+              }}>
+                ~{company.estimated_hours_saved}h
+                <span style={{ 
+                  fontSize: 13, 
+                  color: 'var(--text-muted)', 
+                  fontWeight: 400,
+                  marginLeft: 6,
+                }}>
+                  / month
+                </span>
               </div>
             </div>
           )}
 
           {/* Actions */}
-          <div style={{ padding: '16px 20px', marginTop: 'auto' }}>
+          <div style={{ 
+            padding: 'var(--space-xl)', 
+            marginTop: 'auto',
+            background: 'var(--surface)',
+            borderTop: '1px solid var(--border)',
+          }}>
             {msg && (
-              <div style={{ fontSize: 12, color: 'var(--score-hot)', marginBottom: 10, padding: '8px 10px', background: '#e1f5ee', borderRadius: 6 }}>
+              <div className="badge badge-success" style={{ 
+                fontSize: 12, 
+                marginBottom: 12, 
+                padding: '10px 12px',
+                width: '100%',
+                justifyContent: 'center',
+              }}>
                 {msg}
               </div>
             )}
-            <button onClick={runAnalysis} disabled={analyzing} style={primaryBtn}>
-              {analyzing ? 'Analyserar...' : '✦ Kör AI-analys'}
+            <button 
+              onClick={runAnalysis} 
+              disabled={analyzing} 
+              className="btn btn-primary"
+              style={{ width: '100%', marginBottom: 8 }}
+            >
+              {analyzing ? 'Analyzing...' : '✦ Run AI Analysis'}
             </button>
-            <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-              <button onClick={() => pushCRM('hubspot')} disabled={pushing} style={secondaryBtn}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button 
+                onClick={() => pushCRM('hubspot')} 
+                disabled={pushing} 
+                className="btn btn-secondary"
+                style={{ flex: 1 }}
+              >
                 → HubSpot
               </button>
-              <button onClick={() => pushCRM('pipedrive')} disabled={pushing} style={secondaryBtn}>
+              <button 
+                onClick={() => pushCRM('pipedrive')} 
+                disabled={pushing} 
+                className="btn btn-secondary"
+                style={{ flex: 1 }}
+              >
                 → Pipedrive
               </button>
             </div>
@@ -198,35 +371,10 @@ export default function DetailPanel({ company, onUpdate }: { company: Company; o
 }
 
 const sectionTitle: React.CSSProperties = {
-  fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em',
-  color: 'var(--text-tertiary)', marginBottom: 8,
-}
-
-const tabBtn = (active: boolean): React.CSSProperties => ({
-  flex: 1,
-  padding: '10px 0',
-  fontSize: 12,
-  fontWeight: active ? 500 : 400,
-  color: active ? 'var(--text-primary)' : 'var(--text-tertiary)',
-  background: 'none',
-  border: 'none',
-  borderBottom: active ? '2px solid var(--text-primary)' : '2px solid transparent',
-  marginBottom: -1,
-  cursor: 'pointer',
-  fontFamily: 'var(--font-sans)',
-  transition: 'color 0.15s',
-})
-
-const primaryBtn: React.CSSProperties = {
-  width: '100%', padding: '9px', borderRadius: 7,
-  background: 'var(--text-primary)', color: 'white',
-  border: 'none', fontSize: 13, fontWeight: 500,
-  cursor: 'pointer', fontFamily: 'var(--font-sans)',
-}
-
-const secondaryBtn: React.CSSProperties = {
-  flex: 1, padding: '8px', borderRadius: 7,
-  background: 'var(--surface)', color: 'var(--text-primary)',
-  border: '1px solid var(--border)', fontSize: 12,
-  cursor: 'pointer', fontFamily: 'var(--font-sans)',
+  fontSize: 11, 
+  textTransform: 'uppercase', 
+  letterSpacing: '0.1em',
+  color: 'var(--text-muted)', 
+  marginBottom: 12,
+  fontWeight: 600,
 }
