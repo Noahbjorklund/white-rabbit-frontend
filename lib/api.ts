@@ -1,5 +1,6 @@
 const BASE = 'https://white-rabbit-api-production-9119.up.railway.app'
 
+// API client for White Rabbit
 export interface Company {
   id: number
   name: string
